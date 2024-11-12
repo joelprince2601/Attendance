@@ -1,0 +1,12 @@
+.class-card {
+  background-color: #f0f0f0;
+  padding: 20px;
+  margin: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 200px;
+}
+
+.class-card button {
+  margin-top: 10px;
+}
