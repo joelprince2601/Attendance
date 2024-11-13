@@ -1,24 +1,71 @@
 const fs = require('fs');
-const http = require('http');
-const url = require('url');
 const { parse } = require('querystring');
+const { Client } = require('pg');
+const path = require('path');
 
-const server = http.createServer((req, res) => {
+// Set up PostgreSQL connection
+const client = new Client({
+  user: 'postgres',        
+  host: 'localhost',
+  database: 'postgres',
+  password: 'root',
+  port: 5432,
+});
+
+client.connect()
+  .then(() => console.log('Connected to PostgreSQL'))
+  .catch(err => console.error('Connection error', err.stack));
+
+const filePath = path.join(__dirname, 'info.txt');
+
+// Watch for changes in info.txt
+fs.watch(filePath, (eventType, filename) => {
+  if (eventType === 'change') {
+    // Read the updated file content
+    fs.readFile(filePath, 'utf-8', (err, data) => {
+      if (err) {
+        console.error('Error reading file:', err);
+        return;
+      }
+
+      // Process the file content and insert into the database
+      const lines = data.split('\n').filter(line => line.trim() !== '');
+      let classDetails = {};
+
+      lines.forEach(line => {
+        const [key, value] = line.split(':').map(item => item.trim());
+        classDetails[key.toLowerCase()] = value;
+      });
+
+      // Insert the data into PostgreSQL
+      const { classname, classnumber, slot } = classDetails;
+
+      if (classname && classnumber && slot) {
+        const query = 'INSERT INTO classes (classname, classnumber, slot) VALUES ($1, $2, $3)';
+        const values = [classname, classnumber, slot];
+
+        client.query(query, values)
+          .then(() => console.log('Data inserted into database'))
+          .catch(err => console.error('Error inserting data:', err));
+      }
+    });
+  }
+});
+
+const server = require('http').createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/save-class') {
     let body = '';
-
-    // Collect the data from the request
     req.on('data', chunk => {
       body += chunk.toString();
     });
 
     req.on('end', () => {
       const { classname, classnumber, slot } = parse(body);
-      
-      // Save the details in a file
+
+      // Save class details in info.txt
       const classData = `classname: ${classname}\nclassnumber: ${classnumber}\nslot: ${slot}\n\n`;
 
-      fs.appendFile('info.txt', classData, (err) => {
+      fs.appendFile(filePath, classData, (err) => {
         if (err) {
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Error saving the data');
