@@ -9,6 +9,7 @@ function ClassPage() {
     email: '',
   });
 
+  // Handle input changes
   const handleChange = (e) => {
     setStudentDetails({
       ...studentDetails,
@@ -16,24 +17,40 @@ function ClassPage() {
     });
   };
 
-  const handleSubmit = (e) => {
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting student details:", studentDetails);
+
     if (studentDetails.regNo && studentDetails.name && studentDetails.email) {
-      setStudents([
-        ...students,
-        {
-          regNo: studentDetails.regNo,
-          name: studentDetails.name,
-          email: studentDetails.email,
-        },
-      ]);
-      setIsModalVisible(false);
-      setStudentDetails({ regNo: '', name: '', email: '' });
+      try {
+        // Optional: Add API call to submit data to server
+        const response = await fetch('http://localhost:5000/add-student', {
+          method: 'POST',
+          body: JSON.stringify(studentDetails),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to submit student details');
+        }
+
+        const newStudent = await response.json();  // Assume backend returns the added student
+        setStudents([...students, newStudent]);  // Update state with the new student
+        setIsModalVisible(false);
+        setStudentDetails({ regNo: '', name: '', email: '' });
+      } catch (error) {
+        console.error('Error submitting student details:', error);
+        alert('An error occurred while submitting the student details. Please try again.');
+      }
     } else {
       alert('Please fill in all fields!');
     }
   };
 
+  // Show modal to add a student
   const addStudent = () => {
     setIsModalVisible(true);
   };
@@ -57,6 +74,7 @@ function ClassPage() {
         </button>
       </header>
 
+      {/* Modal for adding student */}
       {isModalVisible && (
         <div
           style={{
@@ -177,6 +195,7 @@ function ClassPage() {
         </div>
       )}
 
+      {/* Display list of students */}
       <div
         style={{
           marginTop: '2rem',
