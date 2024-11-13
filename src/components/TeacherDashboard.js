@@ -1,4 +1,3 @@
-// TeacherDashboard.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,17 +27,36 @@ function TeacherDashboard() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (classDetails.className && classDetails.classNumber) {
-      setClasses([
-        ...classes,
-        {
-          name: classDetails.className,
-          classNumber: classDetails.classNumber,
-          slot: classDetails.slot,
-          students: [],
+      // Send data to backend to save in info.txt
+      fetch('http://localhost:3000/save-class', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-      ]);
-      setIsModalVisible(false);
-      setClassDetails({ className: '', classNumber: '', slot: 'A1' });
+        body: new URLSearchParams({
+          classname: classDetails.className,
+          classnumber: classDetails.classNumber,
+          slot: classDetails.slot,
+        }),
+      })
+        .then((response) => response.text())
+        .then((data) => {
+          console.log(data); // Log success message from the server
+          setClasses([
+            ...classes,
+            {
+              name: classDetails.className,
+              classNumber: classDetails.classNumber,
+              slot: classDetails.slot,
+              students: [],
+            },
+          ]);
+          setIsModalVisible(false);
+          setClassDetails({ className: '', classNumber: '', slot: 'A1' });
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
     } else {
       alert('Please fill in all fields!');
     }
@@ -69,25 +87,29 @@ function TeacherDashboard() {
       </header>
 
       {isModalVisible && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '1rem',
-            padding: '2rem',
-            maxWidth: '28rem',
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
             width: '100%',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          }}>
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '1rem',
+              padding: '2rem',
+              maxWidth: '28rem',
+              width: '100%',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            }}
+          >
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#1F2937' }}>Add New Class</h2>
             <form onSubmit={handleSubmit}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#1F2937', fontWeight: 'bold' }}>Class Name:</label>
@@ -160,7 +182,7 @@ function TeacherDashboard() {
               >
                 Submit
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => setIsModalVisible(false)}
@@ -181,12 +203,14 @@ function TeacherDashboard() {
         </div>
       )}
 
-      <div style={{
-        marginTop: '2rem',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: '1rem',
-      }}>
+      <div
+        style={{
+          marginTop: '2rem',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: '1rem',
+        }}
+      >
         {classes.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#4B5563' }}>No classes added yet!</p>
         ) : (
